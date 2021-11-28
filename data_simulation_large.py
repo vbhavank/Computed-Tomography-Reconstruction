@@ -73,6 +73,8 @@ with h5py.File(gt_filepath, "r") as gtf:
         ax = fig.add_subplot(2, 5, i+1)
         ax.imshow(sample_x, cmap='gray')
         ax.axis('off')
+# Obtain actual vector x used in model
+x_flatten = sample_x.flatten()
 
 x, y = sample_x.shape
 string_list = []
@@ -86,9 +88,6 @@ indices_A = np.array(string_list, dtype = 'object').reshape(x, y)
 # alpha_scale = random.sample(range(1, 8), y)
 # for i, alpha in enumerate(alpha_scale):
 # 	sample_x[:, i] = alpha * sample_x[:, i]
-
-# Obtain actual vector x used in model
-x_flatten = sample_x.flatten()
 
 # Visualize the image
 print(sample_x)
@@ -150,9 +149,8 @@ for obs_n, ind in enumerate(all_indices):
 		local_x, local_y = sub_i.split(',')
 		A_mixing_matrix[obs_n, int(local_x), int(local_y)] = 1
 A_final = A_mixing_matrix.reshape((obs_n+1, row_dim*col_dim))
-
 # Pure observations are used for lambda to sample from poisson distribution
-pure_obser = np.sum(A_final*x_flatten, axis=1)
+pure_obser = A_final.dot(x_flatten)
 poisson_obser = np.random.poisson(pure_obser, len(all_indices))
 
 # Saving to mat files for use in MATLAB

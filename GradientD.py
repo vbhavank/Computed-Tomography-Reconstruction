@@ -5,19 +5,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-x = sp.loadmat("simulated_heart.mat")
+x = sp.loadmat("simulated_large.mat")
 A_matrix = x['A']
 y_observation = x['y'][0, :]
 
 x_vec = x['x']
 
 # Generating new x vector
-g = np.random.randn(25)+ 5
-u = np.random.uniform(0, 10, 25)
+g = np.random.randn(len(x_vec[0]))+ 5
+u = np.random.uniform(0, 10, len(x_vec))
 x = 0.2*g + u
-x_vec = x.flatten().reshape(1, 25)
+x_vec = x.flatten().reshape(1, len(x_vec[0]))
 Ax = A_matrix@x_vec.flatten()
-y_observation = np.random.poisson(Ax).reshape(28)
+y_observation = np.random.poisson(Ax).reshape(len(y_observation))
 
 print("Image vector x is of shape {}".format(np.shape(x_vec)))
 print("Mixing matrix A is of shape {}".format(np.shape(A_matrix)))
