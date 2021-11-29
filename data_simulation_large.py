@@ -1,14 +1,11 @@
-import pdb
-
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.io import savemat
 import h5py
 import random
 from typing import Tuple
 import cv2
 
-
+image_size = 50
 class SlidingWindow ():
     """
     Produce perturbation  matrices based on hard, block-y occlusion areas as
@@ -66,13 +63,10 @@ sample_ids = random.sample(range(0, 127), 1)
 
 # Loading ground truth file for the observation data loaded above
 with h5py.File(gt_filepath, "r") as gtf:
-    fig = plt.figure()
     for i, ids in enumerate(sample_ids):
         sample_x = gtf['data'][ids, :, :]
-        sample_x = cv2.resize(sample_x, dsize=(200, 200), interpolation=cv2.INTER_CUBIC)
-        ax = fig.add_subplot(2, 5, i+1)
-        ax.imshow(sample_x, cmap='gray')
-        ax.axis('off')
+        sample_x = cv2.resize(sample_x, dsize=(image_size, image_size), interpolation=cv2.INTER_CUBIC)
+        sample_x = (255 * (sample_x - np.min(sample_x)) / np.ptp(sample_x)).astype(float)
 # Obtain actual vector x used in model
 x_flatten = sample_x.flatten()
 
@@ -83,16 +77,10 @@ for i in range(x):
 		string_list.append("{},{}".format(i, j))
 indices_A = np.array(string_list, dtype = 'object').reshape(x, y)
 
-# Random alpha scaling to prevent trivial 1, 0 problem
-# import random
-# alpha_scale = random.sample(range(1, 8), y)
-# for i, alpha in enumerate(alpha_scale):
-# 	sample_x[:, i] = alpha * sample_x[:, i]
-
 # Visualize the image
 print(sample_x)
 plt.figure()
-plt.imshow(sample_x)
+plt.imshow(sample_x, cmap='gray')
 plt.title('Sample Image')
 plt.show()
 plt.close()
@@ -129,14 +117,17 @@ for j in range(x):
 # Using a sliding window of size 25 and stride 5 for observations
 window_arr = []
 window_indic_global = []
-sd = SlidingWindow((25, 25), (5, 5))
-masks = sd.perturb(sample_x)
-for m_n, mask in enumerate(masks):
-    window_arr = []
-    N = sum(mask)
-    A_ind = np.where(mask == 1)
-    window_arr = ["{},{}".format(A_row, A_col) for A_row, A_col in zip(A_ind[0], A_ind[1])]
-    window_indic_global.append(window_arr)
+
+for i in [3, 5]:
+    # Iterate through multiple window size and stride for more observations
+    sd = SlidingWindow((i, i), (2, 1))
+    masks = sd.perturb(sample_x)
+    for m_n, mask in enumerate(masks):
+        window_arr = []
+        N = sum(mask)
+        A_ind = np.where(mask == 1)
+        window_arr = ["{},{}".format(A_row, A_col) for A_row, A_col in zip(A_ind[0], A_ind[1])]
+        window_indic_global.append(window_arr)
 
 # Joining diagonals, columns and row indices and values into a single list
 all_indices = [*diag_indic, *column_indic_global, *row_indic_global, *window_indic_global]
@@ -150,12 +141,13 @@ for obs_n, ind in enumerate(all_indices):
 		A_mixing_matrix[obs_n, int(local_x), int(local_y)] = 1
 A_final = A_mixing_matrix.reshape((obs_n+1, row_dim*col_dim))
 # Pure observations are used for lambda to sample from poisson distribution
-pure_obser = A_final.dot(x_flatten)
+pure_obser = A_final@x_flatten
 poisson_obser = np.random.poisson(pure_obser, len(all_indices))
 
 # Saving to mat files for use in MATLAB
-export_dict = {"A": A_final, "y":poisson_obser, "x": x_flatten, "id": sample_ids[0]}
-savemat("simulated_large.mat", export_dict)
+np.save('simulated_large_A.npy', A_final)
+np.save('simulated_large_x.npy', x_flatten)
+
 print("Image vector x is of shape {}".format(len(x_flatten)))
 print("Mixing matrix A is of shape {}".format(np.shape(A_final)))
 print("Obervation matrix Y is of shape {}".format(np.shape(poisson_obser)))
