@@ -48,3 +48,26 @@ def mle_em(max_iter, A, y, x_true, threshold=1, x_initial=None, sparse=False):
             return x_new, diff, mse, i
         x_old = x_new
     return x_new, diff, mse, max_iter
+
+
+def mle_em_with_obj(max_iter, A, y, x_true, threshold=1, x_initial=None, sparse=False):
+    if x_initial is None:
+        x_old = initialize(A, y)
+    else:
+        x_old = x_initial
+    mse = []
+    objs = []
+    for i in range(max_iter):
+        x_new = em_bdct(A, y, x_old, sparse)
+        mse = np.linalg.norm(x_new-x_true)
+        Ax_new = A.dot(x_new)
+        obj = -np.log(Ax_new)
+        obj = obj*y + Ax_new
+        objs.append(obj.sum())
+        diff = np.linalg.norm(x_new-x_old)
+        if i%20 == 0:
+            print(f'step: {i}, diff: {diff}, mse: {mse}')
+        if diff < threshold:
+            return x_new, diff, mse, i
+        x_old = x_new
+    return x_new, diff, mse, objs, max_iter
