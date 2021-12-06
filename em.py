@@ -32,6 +32,12 @@ def em_bdct(A, y, x_old, sparse=False):
     x_new = np.array(np.sum(z, axis=0)/np.sum(A, axis=0)).flatten()
     return x_new
 
+def gradient(A, y, x_old, sparse=False, lr=0.001):
+    g = y/A.dot(x_old)
+    gradient = (A.T*g).T - np.array(A.sum(axis=0)).flatten()
+    x_new = x_old + lr*gradient
+    return x_new
+
 def mle_em(max_iter, A, y, x_true, threshold=1, x_initial=None, sparse=False):
     if x_initial is None:
         x_old = initialize(A, y)
@@ -62,12 +68,59 @@ def mle_em_with_obj(max_iter, A, y, x_true, threshold=1, x_initial=None, sparse=
         mse = np.linalg.norm(x_new-x_true)
         Ax_new = A.dot(x_new)
         obj = -np.log(Ax_new)
-        obj = obj*y + Ax_new
-        objs.append(obj.sum())
-        diff = np.linalg.norm(x_new-x_old)
+        obj = (obj*y + Ax_new).sum()
+        if len(objs) > 1:
+            diff = objs[-1] - obj
+        else:
+            diff = 100   
+        objs.append(obj)
         if i%20 == 0:
-            print(f'step: {i}, diff: {diff}, mse: {mse}')
+            print(f'step: {i}, diff: {diff}, mse: {mse}:, obj: {obj}')
         if diff < threshold:
-            return x_new, diff, mse, i
+            return x_new, diff, mse, objs, i
+        x_old = x_new
+        objs.append(obj)
+        # diff = np.linalg.norm(x_new-x_old)
+        # if i%20 == 0:
+        #     print(f'step: {i}, diff: {diff}, mse: {mse}:, obj: {obj}')
+        # if diff < threshold:
+        #     return x_new, diff, mse, objs, i
+        # x_old = x_new
+    return x_new, diff, mse, objs, max_iter
+
+
+def mle_gd_with_obj(max_iter, A, y, x_true, threshold=1, x_initial=None, sparse=False, alpha=0.001):
+    if x_initial is None:
+        x_old = initialize(A, y)
+    else:
+        x_old = x_initial
+    mse = []
+    objs = []
+    lr = alpha
+    for i in range(max_iter):
+        # lr = alpha
+        early_stop = False
+        x_new = gradient(A, y, x_old, sparse, lr=lr)
+        Ax_new = A.dot(x_new)
+        obj = -np.log(Ax_new)
+        obj = (obj*y + Ax_new).sum()
+        # line_search = 10
+        # if len(objs)>0 and obj >= objs[-1]:
+        #     lr *= 0.5
+        #     x_new = x_old 
+        #     Ax_new = A.dot(x_new)
+        #     obj = -np.log(Ax_new)
+        #     obj = (obj*y + Ax_new).sum()
+            # objs.append(objs[-1])
+        mse = np.linalg.norm(x_new-x_true)
+        if len(objs) > 1:
+            diff = objs[-1] - obj
+        else:
+            diff = 100   
+        objs.append(obj)
+        if i%20 == 0:
+            print(f'step: {i}, lr: "{lr: .6e}" diff: {diff}, mse: {mse}:, obj: {obj}')
+        if diff < threshold:
+            return x_new, diff, mse, objs, i
         x_old = x_new
     return x_new, diff, mse, objs, max_iter
