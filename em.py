@@ -36,6 +36,7 @@ def gradient(A, y, x_old, sparse=False, lr=0.001):
     g = y/A.dot(x_old)
     gradient = (A.T*g).T - np.array(A.sum(axis=0)).flatten()
     x_new = x_old + lr*gradient
+    x_new = np.clip(x_new, 0.1, None)
     return x_new
 
 def mle_em(max_iter, A, y, x_true, threshold=1, x_initial=None, sparse=False):
@@ -75,7 +76,7 @@ def mle_em_with_obj(max_iter, A, y, x_true, threshold=1, x_initial=None, sparse=
             diff = 100   
         objs.append(obj)
         if i%20 == 0:
-            print(f'step: {i}, diff: {diff}, mse: {mse}:, obj: {obj}')
+            print(f'step: {i: 5d}, diff: {diff: .6f}, mse: {mse: .6f}:, obj: {obj: .6f}')
         if diff < threshold:
             return x_new, diff, mse, objs, i
         x_old = x_new
@@ -119,7 +120,7 @@ def mle_gd_with_obj(max_iter, A, y, x_true, threshold=1, x_initial=None, sparse=
             diff = 100   
         objs.append(obj)
         if i%20 == 0:
-            print(f'step: {i}, lr: "{lr: .6e}" diff: {diff}, mse: {mse}:, obj: {obj}')
+            print(f'step: {i: 5d}, lr: {lr: .4f}, diff: {diff: .6f}, mse: {mse: .6f}:, obj: {obj: .6f}')
         if diff < threshold:
             return x_new, diff, mse, objs, i
         x_old = x_new
