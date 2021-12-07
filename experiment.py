@@ -116,9 +116,10 @@ if __name__ == "__main__":
     epoch = 200
     n_para = 200
     e_stop = 0.0001
-    home = "et10_gd"
+    home = "et10_em_rerun"
     # multi_mc(A_original, x_flat)
-    multi_mc_gd(A_original, x_flat)
+    multi_mc(A_original, x_flat)
+    # multi_mc_gd(A_original, x_flat)
     # nm = 1
     # A = A_original*nm
     # Ax = A @ x_flat
