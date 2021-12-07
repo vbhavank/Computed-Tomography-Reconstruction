@@ -16,8 +16,14 @@ def run_gd(arg):
     alpha = 1.
     if norm > 1:
         alpha = 0.1
+    if sparse:
+        x_init =  np.linalg.inv((A.T@A).todense())@(A.T@y_rand)
+    else:
+        x_init =  np.linalg.inv((A.T@A))@(A.T@y_rand)
+    x_init = np.array(x_init).flatten()
+    x_init = np.array([v if v>0.1 else 10 for v in x_init])
     print(f"process: {ix: 2d}, y[:10]: {y_rand[:10]}")
-    x_et, diff, mse, objs, step = mle_gd_with_obj(max_step, A, y_rand, x_true=x_flat, threshold=threshold, x_initial=None, sparse=sparse, alpha=alpha)
+    x_et, diff, mse, objs, step = mle_gd_with_obj(max_step, A, y_rand, x_true=x_flat, threshold=threshold, x_initial=x_init, sparse=sparse, alpha=alpha)
     print(f"process: {ix: 2d} finished. step: {step: 2d}, mse: {mse: 8.2f}, diff: {diff: 8.2f} time consuming: {time.time() - start: 8.1f} seconds")
     return x_et, diff, mse, step
 
@@ -42,7 +48,7 @@ def mc_mp(n, max_step=2000, threshold=10., sparse=True):
     pool.join()
     return result
 
-def mc_mp_gd(n, max_step=6000, threshold=10., sparse=True, norm=1):
+def mc_mp_gd(n, max_step=10000, threshold=10., sparse=True, norm=1):
     pool = Pool()
     args = [(max_step, threshold, sparse, i, norm) for i in range(n)]
     result = pool.map(run_gd, args)
@@ -113,13 +119,13 @@ if __name__ == "__main__":
     x_flat[0] = 20
     x_flat[90] =20
     
-    epoch = 200
-    n_para = 200
+    epoch = 100
+    n_para = 100
     e_stop = 0.0001
-    home = "et10_em_rerun"
+    home = "et10_gd_rerun"
     # multi_mc(A_original, x_flat)
-    multi_mc(A_original, x_flat)
-    # multi_mc_gd(A_original, x_flat)
+    # multi_mc(A_original, x_flat)
+    multi_mc_gd(A_original, x_flat)
     # nm = 1
     # A = A_original*nm
     # Ax = A @ x_flat
